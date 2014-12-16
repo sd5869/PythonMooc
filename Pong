@@ -1,0 +1,182 @@
+#Classic Arcade Game Pong
+import simplegui
+import random
+# initialize globals
+WIDTH = 600
+HEIGHT = 400       
+BALL_RADIUS = 10
+PAD_WIDTH = 8
+PAD_HEIGHT = 80
+HALF_PAD_WIDTH = PAD_WIDTH / 2
+HALF_PAD_HEIGHT = PAD_HEIGHT / 2
+paddle1_vel = 0
+paddle2_vel = 0
+keypress1_up = False
+keypress1_down = False
+keypress2_up = False
+keypress2_down = False
+velocity = 4
+score1 = 0
+score2 = 0
+
+right=True
+AI = False
+ball_vel=[0,0]
+ball_pos = [300, 200]
+#helper funtions
+def spawn_ball(right):
+    # initialize ball_pos and ball_vel for new bal in middle of table
+    # if direction is RIGHT, the ball's velocity is upper right, else upper left
+    global ball_pos, ball_vel# these are vectors stored as lists
+    ball_pos = [300, 200]
+    if score1 == 5 or score2==5:
+        ball_vel = [0,0]
+    else:
+        if right:
+            ball_vel = [-random.randrange(3, 4), -random.randrange(1, 6)]
+        elif not right:
+            ball_vel = [random.randrange(3, 4), -random.randrange(1, 6)]
+def simpleAI():
+    #the AI controls paddle 2 direction.
+    global paddle2_vel
+
+    # this part returns the paddle a bit towards middle after a hit. Lazy ai. More in the middle would be more effective. But this is how I play it
+    if ball_vel[0]>0:
+        if paddle2_pos < 80 and ball_pos[0]<520:
+            paddle2_vel=4
+        elif paddle2_pos > 240 and ball_pos[0]<520:
+            paddle2_vel=-4
+        else:
+            paddle2_vel=0
+    # this part tries to align the paddle with incoming ball. Lazy again, it tries to hit with the very edge of the paddle. 
+    # Increase in ball velocity moves the "hit" point towards middle of bat (but too little - the AI gets worse in high speeds. Leads to bit jerky movement, but with so few lines - i'm please with the result
+    else:
+        if ball_pos[1] < paddle2_pos+10-(ball_vel[1]+ball_vel[0]):
+            paddle2_vel=-4
+        elif ball_pos[1] > paddle2_pos+PAD_HEIGHT-10-(ball_vel[1]-ball_vel[0]):
+            paddle2_vel=4
+        else:
+            paddle2_vel=0
+def update_paddle():
+        global paddle1_pos,paddle2_pos
+        if AI and ball_pos[0]>60:
+                simpleAI()
+        if (paddle1_pos + paddle1_vel >= 0)and(paddle1_pos + paddle1_vel <= HEIGHT - PAD_HEIGHT):
+                paddle1_pos += paddle1_vel
+        if (paddle2_pos + paddle2_vel >= 0)and(paddle2_pos + paddle2_vel <= HEIGHT - PAD_HEIGHT):
+                paddle2_pos += paddle2_vel
+def update_ball():
+    global score1, score2,ball_pos, ball_vel,right
+    ball_pos[0] += ball_vel[0]
+    ball_pos[1] += ball_vel[1]
+    if ball_pos[1] < 2*BALL_RADIUS:
+        ball_vel[1] = -ball_vel[1]
+    if ball_pos[1] > HEIGHT - 2*BALL_RADIUS:
+        ball_vel[1] = -ball_vel[1]
+    if ball_pos[0] - BALL_RADIUS < PAD_WIDTH:
+        if ball_pos[1] in range(paddle2_pos,paddle2_pos + PAD_HEIGHT + BALL_RADIUS):
+            ball_vel[0] = 1.1*-ball_vel[0]
+        else:
+            score2 += 1
+            right = False
+            spawn_ball(right)
+    if ball_pos[0] + BALL_RADIUS > WIDTH - PAD_WIDTH:
+        if ball_pos[1] in range(paddle1_pos,paddle1_pos + PAD_HEIGHT + BALL_RADIUS):
+            ball_vel[0] = 1.1*-ball_vel[0]
+        else:
+            score1 += 1
+            right = True
+            spawn_ball(right)
+# define event handlers
+def button_handler2():
+    global AI
+    if AI:
+        button2.set_text('AI Mode:Off')
+    else:
+        button2.set_text('AI Mode:On')
+    AI = not AI
+def new_game():
+    global paddle1_pos, paddle2_pos, paddle1_vel, paddle2_vel,right
+    global score1, score2
+    paddle1_pos = HEIGHT / 2 - HALF_PAD_HEIGHT
+    paddle2_pos = HEIGHT / 2 - HALF_PAD_HEIGHT
+    right = True
+    score1 = 0
+    score2 = 0
+    spawn_ball(right)
+def draw(canvas):        
+    # draw mid line and gutters
+    canvas.draw_line([WIDTH / 2, 0],[WIDTH / 2, HEIGHT], 1, "White")
+    canvas.draw_line([PAD_WIDTH, 0],[PAD_WIDTH, HEIGHT], 1, "White")
+    canvas.draw_line([WIDTH - PAD_WIDTH, 0],[WIDTH - PAD_WIDTH, HEIGHT], 1, "White")
+    # draw scores
+    canvas.draw_text(str(score1) + '      ' + str(score2), (240,60), 50, "White")    
+    # update ball   
+    update_ball()
+    # draw ball
+    ball = canvas.draw_circle(ball_pos, BALL_RADIUS, 5, "Orange", "Orange")
+    # update paddle's vertical position, keep paddle on the screen
+    update_paddle()
+    # draw paddles    
+    if AI:
+        paddle1 = canvas.draw_line([HALF_PAD_WIDTH, paddle2_pos], [HALF_PAD_WIDTH, paddle2_pos + PAD_HEIGHT], PAD_WIDTH, "blue")
+    else:
+        paddle1 = canvas.draw_line([HALF_PAD_WIDTH, paddle2_pos], [HALF_PAD_WIDTH, paddle2_pos + PAD_HEIGHT], PAD_WIDTH, "White")
+    paddle2 = canvas.draw_line([WIDTH - HALF_PAD_WIDTH, paddle1_pos], [WIDTH - HALF_PAD_WIDTH, paddle1_pos + PAD_HEIGHT], PAD_WIDTH, "White")
+    # draw winner
+    if score1 == 5:
+        if not AI:
+            canvas.draw_text("LEFT PADDLE WINS!", (180,120), 20, "green")
+        else:
+            canvas.draw_text("COMPUTER WINS!", (190,120), 20, "green")
+    if score2 == 5:
+        if not AI:
+            canvas.draw_text("RIGHT PADDLE WINS!", (180,120),20,"green")
+        else:
+            canvas.draw_text("PLAYER WINS!", (180,120),20,"green")
+
+def keydown(key):
+    global paddle1_vel, paddle2_vel, keypress1_up, keypress1_down, keypress2_down, keypress2_up, velocity
+    if key == simplegui.KEY_MAP["up"]:
+        paddle1_vel = -velocity
+        keypress1_up = True
+    if key == simplegui.KEY_MAP["down"]:
+        paddle1_vel = velocity
+        keypress1_down = True
+    if key == simplegui.KEY_MAP["w"]:
+        paddle2_vel = -velocity
+        keypress2_up = True
+    if key == simplegui.KEY_MAP["s"]:
+        paddle2_vel = velocity
+        keypress2_down = True
+def keyup(key):
+    global paddle1_vel, paddle2_vel, keypress1_up, keypress1_down, keypress2_down, keypress2_up
+    if key == simplegui.KEY_MAP["up"]:
+        keypress1_up = False
+        if not keypress1_down:
+            paddle1_vel = 0
+    if key == simplegui.KEY_MAP["down"]:
+        keypress1_down = False
+        if not keypress1_up:
+            paddle1_vel = 0
+    if key == simplegui.KEY_MAP["w"]:
+        keypress2_up = False
+        if not keypress2_down:
+            paddle2_vel = 0
+    if key == simplegui.KEY_MAP["s"]:
+        keypress2_down = False
+        if not keypress2_up:
+            paddle2_vel = 0
+def quit():
+    frame.stop()
+# create frame
+frame = simplegui.create_frame("Pong", WIDTH, HEIGHT)
+frame.set_draw_handler(draw)
+frame.set_keydown_handler(keydown)
+frame.set_keyup_handler(keyup)
+frame.add_button("Restart", new_game, 100)
+frame.add_button("Exit", quit, 100)
+button2 = frame.add_button('AI Mode:Off', button_handler2,100)
+# start frame
+new_game()
+frame.start()
