@@ -9,3 +9,6 @@ Memory
 http://www.codeskulptor.org/#user39_BpiIqHR6azTDJL8.py
 Pong
 ===
+http://www.codeskulptor.org/#user39_Ck0KRjPdCVwtqcP.py
+RiceRocks
+===
