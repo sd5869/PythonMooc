@@ -1,4 +1,6 @@
 Python Mooc
 ==========
 Here I am Adding all my Mini Projects. 
-These can be run by copy-paste the code on http://www.codeskulptor.org/
+Blackjack
+===
+http://www.codeskulptor.org/#user39_xbfwwB0sTcrDho8.py
